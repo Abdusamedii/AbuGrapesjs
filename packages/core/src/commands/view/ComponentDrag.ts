@@ -328,11 +328,42 @@ export default {
       });
       styleUp = style;
     }
-
-    if (opts.addStyle) {
-      opts.addStyle({ component: target, styles: styleUp, partial: !end });
+    if (!end) {
+      if (opts.addStyle) {
+        opts.addStyle({ component: target, styles: styleUp, partial: true });
+      } else {
+        target.addStyle(styleUp, { avoidStore: true });
+      }
     } else {
-      target.addStyle(styleUp, { avoidStore: !end });
+      const device = this.editor.Devices.getSelected();
+      const widthMedia = device?.get('widthMedia') || '';
+
+      const mediaOpts =
+        widthMedia && widthMedia !== '1920px'
+          ? {
+              atRuleType: 'media',
+              atRuleParams: `(max-width: ${widthMedia})`,
+            }
+          : {};
+
+      const hasCustomClass = target.getClasses().find((cls: string) => cls.startsWith('customClass-'));
+
+      if (hasCustomClass) {
+        const className = hasCustomClass;
+
+        const rule =
+          this.editor.Css.getRule(`.${className}`, mediaOpts) ||
+          this.editor.Css.setRule(`.${className}`, {}, mediaOpts);
+
+        rule.addStyle(styleUp);
+
+        const currentInline = target.getStyle();
+        const propsMoved = Object.keys(styleUp).filter((k) => k !== '__p');
+        propsMoved.forEach((prop) => delete currentInline[prop]);
+        target.setStyle(currentInline);
+      } else {
+        target.addStyle(styleUp, { avoidStore: false });
+      }
     }
 
     em.Styles.__emitCmpStyleUpdate(styleUp, { components: em.getSelected() });
