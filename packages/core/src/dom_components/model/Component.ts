@@ -189,7 +189,7 @@ export default class Component extends StyleableModel<ComponentProperties> {
       attributes: {},
       traits: ['id', 'title'],
       propagate: '',
-      dmode: '',
+      dmode: 'translate',
       toolbar: null,
       delegate: null,
       [keySymbol]: 0,

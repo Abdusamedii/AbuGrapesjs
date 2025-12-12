@@ -143,6 +143,7 @@ export default {
       skipUnitAdjustments: true,
       onStart: (ev, opts) => {
         onStart(ev, opts);
+        console.log('START Dragg');
         const { el, config, resizer } = opts;
         const { keyHeight, keyWidth, currentUnit, keepAutoHeight, keepAutoWidth } = config;
         toggleBodyClass('add', ev, opts);
@@ -272,9 +273,33 @@ export default {
 
         const updateStyle = (customStyle?: StyleProps) => {
           styleUpdated = true;
-          const finalStyle = { ...(customStyle || style), __p: partial };
-          modelToStyle.addStyle(finalStyle, { avoidStore: partial });
-          em.Styles.__emitCmpStyleUpdate(finalStyle as any, { components: component });
+          const finalStyle = { ...(customStyle || style) };
+
+          const device = editor.Devices.getSelected();
+          const widthMedia = device?.get('widthMedia') || '';
+          const mediaOpts =
+            widthMedia && widthMedia !== '1920px'
+              ? {
+                  atRuleType: 'media',
+                  atRuleParams: `(max-width: ${widthMedia})`,
+                }
+              : {};
+
+          const hasCustomClass = component.getClasses().find((cls: string) => cls.startsWith('customClass-'));
+
+          if (hasCustomClass) {
+            const className = hasCustomClass;
+
+            const rule =
+              editor.Css.getRule(`.${className}`, mediaOpts) || editor.Css.setRule(`.${className}`, {}, mediaOpts);
+
+            rule.addStyle(finalStyle, { avoidStore: partial });
+
+            em.trigger('style:update');
+          } else {
+            modelToStyle.addStyle({ ...finalStyle, __p: partial }, { avoidStore: partial });
+            em.Styles.__emitCmpStyleUpdate({ ...finalStyle, __p: partial } as any, { components: component });
+          }
         };
 
         const eventProps: ComponentResizeEventUpdateProps = {
